@@ -1,0 +1,210 @@
+{
+  "realm": "enterprise",
+  "enabled": true,
+  "organizationsEnabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Default user role"
+      },
+      {
+        "name": "admin",
+        "description": "Organization administrator"
+      },
+      {
+        "name": "super-admin",
+        "description": "Platform super administrator"
+      }
+    ]
+  },
+  "defaultRoles": ["user"],
+  "clients": [
+    {
+      "clientId": "librechat",
+      "name": "LibreChat Application",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "librechat-client-secret",
+      "redirectUris": [
+        "http://localhost:3080/*",
+        "http://librechat:3080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3080",
+        "http://librechat:3080"
+      ],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "organization"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "protocolMappers": [
+        {
+          "name": "group-membership-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "workspace-attribute-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "workspace",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "workspace",
+            "userinfo.token.claim": "true",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "librechat",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "bifrost-admin",
+      "name": "Bifrost Admin Service Account",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "bifrost-admin-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email"
+      ]
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "organization",
+      "description": "Organization membership scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "Access your organization information"
+      },
+      "protocolMappers": [
+        {
+          "name": "organization-membership-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-organization-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "organization",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@example.com",
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user", "admin", "super-admin"],
+      "attributes": {
+        "workspace": ["default"]
+      }
+    },
+    {
+      "username": "user@example.com",
+      "email": "user@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"],
+      "attributes": {
+        "workspace": ["default"]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "engineering",
+      "path": "/engineering",
+      "subGroups": [
+        {
+          "name": "backend",
+          "path": "/engineering/backend"
+        },
+        {
+          "name": "frontend",
+          "path": "/engineering/frontend"
+        }
+      ]
+    },
+    {
+      "name": "product",
+      "path": "/product"
+    }
+  ]
+}

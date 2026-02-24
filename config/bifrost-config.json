@@ -1,0 +1,56 @@
+{
+  "client": {
+    "name": "libfrost-enterprise",
+    "log_level": "info"
+  },
+  "config_store": {
+    "type": "postgres",
+    "postgres": {
+      "host": "postgres",
+      "port": 5432,
+      "database": "bifrost",
+      "username": "bifrost_user",
+      "password": "bifrost_password",
+      "ssl_mode": "disable"
+    }
+  },
+  "logs_store": {
+    "type": "postgres",
+    "postgres": {
+      "host": "postgres",
+      "port": 5432,
+      "database": "bifrost",
+      "username": "bifrost_user",
+      "password": "bifrost_password",
+      "ssl_mode": "disable"
+    }
+  },
+  "plugins": [
+    {
+      "name": "usermgmt",
+      "enabled": true,
+      "config": {
+        "keycloak_base_url": "http://keycloak:8180",
+        "keycloak_realm": "enterprise",
+        "keycloak_admin_client_id": "bifrost-admin",
+        "keycloak_admin_client_secret": "bifrost-admin-secret",
+        "jwks_url": "http://keycloak:8180/realms/enterprise/protocol/openid-connect/certs",
+        "jwt_issuer": "http://keycloak:8180/realms/enterprise",
+        "default_user_budget": 10.0,
+        "sync_interval_seconds": 300
+      }
+    },
+    {
+      "name": "governance",
+      "enabled": true,
+      "config": {
+        "is_vk_mandatory": true,
+        "is_enterprise": true
+      }
+    },
+    {
+      "name": "logging",
+      "enabled": true
+    }
+  ]
+}

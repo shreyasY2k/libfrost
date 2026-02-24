@@ -1,0 +1,28 @@
+# LibreChat Configuration for Enterprise LLM Stack
+# Routes all LLM requests through Bifrost gateway
+version: 1.2.1
+
+cache: true
+
+endpoints:
+  custom:
+    - name: "Enterprise LLM"
+      apiKey: "user_provided"
+      baseURL: "http://bifrost:8080/v1/"
+      models:
+        default:
+          - "openai/gpt-4o"
+          - "openai/gpt-4o-mini"
+          - "anthropic/claude-sonnet-4-20250514"
+          - "anthropic/claude-haiku-4-20250414"
+        fetch: true
+      titleConvo: true
+      titleModel: "openai/gpt-4o-mini"
+      summarize: false
+      forcePrompt: false
+      modelDisplayLabel: "Enterprise LLM"
+      addParams:
+        stream: true
+      dropParams:
+        - "user"
+      iconURL: ""

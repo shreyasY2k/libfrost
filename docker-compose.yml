@@ -1,0 +1,156 @@
+version: "3.9"
+
+services:
+  # =============================================================================
+  # PostgreSQL 16 - Shared database for Keycloak and Bifrost
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: libfrost-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - libfrost
+
+  # =============================================================================
+  # MongoDB 8 - LibreChat data store
+  # =============================================================================
+  mongodb:
+    image: mongo:8
+    container_name: libfrost-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - libfrost
+
+  # =============================================================================
+  # Meilisearch - LibreChat search engine
+  # =============================================================================
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    container_name: libfrost-meilisearch
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-meili_master_key}
+      MEILI_NO_ANALYTICS: true
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - libfrost
+
+  # =============================================================================
+  # Keycloak v26.1 - Identity & Access Management
+  # =============================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: libfrost-keycloak
+    command:
+      - start-dev
+      - --features=organization
+      - --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: keycloak_password
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8180
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    ports:
+      - "8180:8180"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8180 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200\\|UP'"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+    networks:
+      - libfrost
+
+  # =============================================================================
+  # Bifrost - LLM Gateway
+  # =============================================================================
+  bifrost:
+    image: ghcr.io/maximhq/bifrost:latest
+    container_name: libfrost-bifrost
+    environment:
+      BIFROST_CONFIG_PATH: /app/config.json
+    volumes:
+      - ./config/bifrost-config.json:/app/config.json
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - libfrost
+
+  # =============================================================================
+  # LibreChat - Chat Frontend
+  # =============================================================================
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    container_name: libfrost-librechat
+    env_file:
+      - ./config/.env.librechat
+    volumes:
+      - ./config/librechat.yaml:/app/librechat.yaml
+      - librechat_images:/app/client/public/images
+    ports:
+      - "3080:3080"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - libfrost
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  meilisearch_data:
+  librechat_images:
+
+networks:
+  libfrost:
+    driver: bridge
